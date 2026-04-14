@@ -49,6 +49,7 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/ErrorHandling.h"
 #include <algorithm>
+#include <clang/Basic/Specifiers.h>
 #include <optional>
 
 using namespace llvm::omp;
@@ -8358,8 +8359,26 @@ TreeTransform<Derived>::TransformIfStmt(IfStmt *S) {
 
   // If this is a constexpr if, determine which arm we should instantiate.
   std::optional<bool> ConstexprConditionValue;
-  if (S->isConstexpr())
+  
+  if (S->isConstexpr()) {
     ConstexprConditionValue = Cond.getKnownValue();
+    if (!ConstexprConditionValue && Cond.get().second->isValueDependent()) {
+      const DeclContext *DC = getSema().CurContext;
+      if (const auto *MD = dyn_cast<CXXMethodDecl>(DC)) {
+        if (MD->getParent()->isLambda()) {
+          if (isa<DependentScopeDeclRefExpr>(Cond.get().second)) {
+            StmtResult ElseResult;
+            if (S->getElse())
+              ElseResult = S->getElse();
+            return getDerived().RebuildIfStmt(
+                S->getIfLoc(), S->getStatementKind(), S->getLParenLoc(), Cond,
+                S->getRParenLoc(), Init.get(), S->getThen(),
+                S->getElseLoc(), ElseResult.get());
+          }
+        }
+      }
+    }
+  }
 
   // Transform the "then" branch.
   StmtResult Then;
@@ -8368,7 +8387,6 @@ TreeTransform<Derived>::TransformIfStmt(IfStmt *S) {
         getSema(), Sema::ExpressionEvaluationContext::ImmediateFunctionContext,
         nullptr, Sema::ExpressionEvaluationContextRecord::EK_Other,
         S->isNonNegatedConsteval());
-
     Then = getDerived().TransformStmt(S->getThen());
     if (Then.isInvalid())
       return StmtError();
