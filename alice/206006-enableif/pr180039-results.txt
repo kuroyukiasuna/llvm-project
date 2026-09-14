@@ -1,0 +1,16 @@
+=== main, triple=x86 ===
+remark: <unknown>:0:0: the cost-model indicates that vectorization is not beneficial
+remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+  vector.body=0 speculative.load=0 can.load.spec=0
+=== pr180039, triple=x86 ===
+remark: <unknown>:0:0: the cost-model indicates that vectorization is not beneficial
+remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+  vector.body=0 speculative.load=0 can.load.spec=0
+=== main, triple=aarch64 ===
+remark: <unknown>:0:0: the cost-model indicates that vectorization is not beneficial
+remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+  vector.body=0 speculative.load=0 can.load.spec=0
+=== pr180039, triple=aarch64 ===
+remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+remark: <unknown>:0:0: vectorized loop (vectorization width: 4, interleaved count: 1)
+  vector.body=8 speculative.load=2 can.load.spec=2

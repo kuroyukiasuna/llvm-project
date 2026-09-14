@@ -1,0 +1,71 @@
+=== opt -passes=loop-vectorize on findif_pre_lv.ll (fast iteration loop) ===
+remark: <unknown>:0:0: the cost-model indicates that vectorization is not beneficial
+remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+remark: <unknown>:0:0: loop not vectorized: Cannot vectorize early exit loop with strided fault-only-first load
+remark: <unknown>:0:0: loop not vectorized
+remark: <unknown>:0:0: the cost-model indicates that vectorization is not beneficial
+remark: <unknown>:0:0: the cost-model indicates that interleaving is not beneficial
+  vector.body blocks: 0
+
+=== clang -O3 -> asm ===
+  find_simple      lines=  22  vector-cmp=  0  vec-regs=0
+  find_unrolled4   lines=  92  vector-cmp=  0  vec-regs=0
+  any_eq           lines=  26  vector-cmp=  0  vec-regs=0
+--- remarks ---
+findif.cpp:3:3: remark: the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]
+findif.cpp:3:3: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]
+findif.cpp:9:3: remark: loop not vectorized: Cannot vectorize early exit loop with strided fault-only-first load [-Rpass-analysis=loop-vectorize]
+findif.cpp:9:3: remark: loop not vectorized [-Rpass-missed=loop-vectorize]
+findif.cpp:24:3: remark: the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]
+findif.cpp:24:3: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]
+
+=== clang -O3 -force-vector-width=8 -> asm ===
+  find_simple      lines=  22  vector-cmp=  0  vec-regs=0
+  find_unrolled4   lines=  92  vector-cmp=  0  vec-regs=0
+  any_eq           lines=  26  vector-cmp=  0  vec-regs=0
+
+=== unroll-factor sweep: which shape hits which gate ===
+unrollsweep.cpp:2:3: remark: the cost-model indicates that vectorization is not beneficial 
+unrollsweep.cpp:2:3: remark: the cost-model indicates that interleaving is not beneficial 
+unrollsweep.cpp:6:3: remark: loop not vectorized: Cannot vectorize early exit loop with strided fault-only-first load 
+unrollsweep.cpp:6:3: remark: loop not vectorized 
+unrollsweep.cpp:10:3: remark: the cost-model indicates that vectorization is not beneficial 
+unrollsweep.cpp:10:3: remark: the cost-model indicates that interleaving is not beneficial 
+unrollsweep.cpp:14:3: remark: loop not vectorized: Cannot vectorize early exit loop with strided fault-only-first load 
+unrollsweep.cpp:14:3: remark: loop not vectorized 
+unrollsweep.cpp:20:3: remark: the cost-model indicates that vectorization is not beneficial 
+unrollsweep.cpp:20:3: remark: the cost-model indicates that interleaving is not beneficial 
+
+=== deref control: provably-dereferenceable vs not ===
+  g_plain          lines=  60  vector-cmp=  5  vec-regs=1
+  g_unrolled4      lines= 122  vector-cmp= 13  vec-regs=9
+  p_plain          lines=  25  vector-cmp=  0  vec-regs=0
+  p_unrolled4      lines=  48  vector-cmp=  0  vec-regs=0
+--- remarks ---
+deref_control.cpp:10:3: remark: the cost-model indicates that interleaving is not beneficial 
+deref_control.cpp:10:3: remark: vectorized loop (vectorization width: 8, interleaved count: 1) 
+deref_control.cpp:17:3: remark: the cost-model indicates that interleaving is not beneficial 
+deref_control.cpp:17:3: remark: vectorized loop (vectorization width: 4, interleaved count: 1) 
+deref_control.cpp:28:3: remark: the cost-model indicates that vectorization is not beneficial 
+deref_control.cpp:28:3: remark: the cost-model indicates that interleaving is not beneficial 
+deref_control.cpp:36:3: remark: loop not vectorized: Cannot vectorize early exit loop with strided fault-only-first load 
+deref_control.cpp:36:3: remark: loop not vectorized 
+
+=== LV+VPlan debug trace ===
+LV: Checking a loop in '_Z11find_simplePiS_i' from findif_pre_lv.ll
+LV: We can vectorize this loop!
+LV: Not vectorizing: Auto-vectorization of loops with potentially faulting load is not supported.
+LV: Vectorization is possible but not beneficial.
+LV: Checking a loop in '_Z14find_unrolled4PiS_i' from findif_pre_lv.ll
+LV: Not vectorizing: Loop contains potentially faulting strided load.
+LV: Not vectorizing: Cannot prove legality.
+LV: Checking a loop in '_Z6any_eqPKiS0_i' from findif_pre_lv.ll
+LV: We can vectorize this loop!
+LV: Not vectorizing: Auto-vectorization of loops with potentially faulting load is not supported.
+LV: Vectorization is possible but not beneficial.
+
+=== real std::find_if / std::any_of (host libc++) ===
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/find_if.h:24:3: remark: the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/find_if.h:24:3: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/any_of.h:26:3: remark: the cost-model indicates that vectorization is not beneficial [-Rpass-missed=loop-vectorize]
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/__algorithm/any_of.h:26:3: remark: the cost-model indicates that interleaving is not beneficial [-Rpass-missed=loop-vectorize]

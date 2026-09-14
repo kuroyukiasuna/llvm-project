@@ -1,0 +1,161 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "passes",
+      "type": "promptString",
+      "description": "opt pass pipeline for -passes= (ONE token, no spaces)",
+      "default": "indvars"
+    },
+    {
+      "id": "triple",
+      "type": "promptString",
+      "description": "llc target triple",
+      "default": "aarch64-linux-gnu"
+    },
+    {
+      "id": "optLevel",
+      "type": "pickString",
+      "description": "clang optimization level",
+      "options": ["0", "1", "2", "3", "s", "z"],
+      "default": "2"
+    },
+    {
+      "id": "bpFile",
+      "type": "promptString",
+      "description": "Break in which source file? (basename only)",
+      "default": "IndVarSimplify.cpp"
+    },
+    {
+      "id": "bpFunc",
+      "type": "promptString",
+      "description": "Break at which function name?",
+      "default": "run"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "opt: debug current .ll",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/opt",
+      "args": ["-passes=${input:passes}", "-disable-output", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build opt (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ]
+    },
+    {
+      "name": "opt: break at <file>:<func>, debug current .ll",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/opt",
+      "args": ["-passes=${input:passes}", "-disable-output", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build opt (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ],
+      "preRunCommands": [
+        "breakpoint set --file ${input:bpFile} --name ${input:bpFunc}"
+      ]
+    },
+    {
+      "name": "opt: debug current .ll (print resulting IR)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/opt",
+      "args": ["-passes=${input:passes}", "-S", "-o", "-", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build opt (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ]
+    },
+    {
+      "name": "llc: debug current .ll",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/llc",
+      "args": ["-mtriple=${input:triple}", "-mattr=+sve2", "-o", "/dev/null", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build llc (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ]
+    },
+    {
+      "name": "clang: debug current file (driver only)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/clang",
+      "args": [
+        "-O${input:optLevel}",
+        "-S",
+        "-emit-llvm",
+        "-o",
+        "/dev/null",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build clang (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ]
+    },
+    {
+      "name": "clang: follow fork into -cc1",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/clang",
+      "args": [
+        "-O${input:optLevel}",
+        "-S",
+        "-emit-llvm",
+        "-o",
+        "/dev/null",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build clang (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit",
+        "settings set target.process.follow-fork-mode child"
+      ]
+    },
+    {
+      "name": "opt: hand-edited args -- EDIT THE ARRAY, ONE FLAG PER ELEMENT",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build-debug/bin/opt",
+      "args": [
+        "-passes=loop-vectorize",
+        "-force-vector-width=4",
+        "-disable-output",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "terminal": "console",
+      "preLaunchTask": "ninja: build opt (debug)",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ]
+    },
+    {
+      "name": "attach: pick a running process",
+      "type": "lldb",
+      "request": "attach",
+      "pid": "${command:pickMyProcess}",
+      "initCommands": [
+        "command source ${workspaceFolder}/.vscode/lldbinit"
+      ]
+    }
+  ]
+}
