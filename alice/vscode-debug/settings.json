@@ -1,0 +1,28 @@
+{
+  // NOTE: cmake.sourceDirectory previously pointed at ../llvm-project-contribute/libsycl,
+  // which is a different checkout entirely — repointed at this workspace's llvm/.
+  "cmake.sourceDirectory": "/Users/Tianyi.Dang/workspace/llvm-project-alice/llvm",
+  "cmake.buildDirectory": "/Users/Tianyi.Dang/workspace/llvm-project-alice/build-debug",
+  "cmake.configureOnOpen": false,
+  "cmake.configureOnEdit": false,
+
+  "clangd.arguments": [
+    "--compile-commands-dir=/Users/Tianyi.Dang/workspace/llvm-project-alice/build-debug",
+    "--background-index",
+    "--header-insertion=never",
+    "--clang-tidy=false"
+  ],
+
+  "lldb.dereferencePointers": true,
+  "lldb.showDisassembly": "never",
+  "lldb.consoleMode": "commands",
+
+  "files.associations": {
+    "*.ll": "llvm",
+    "*.td": "tablegen"
+  },
+  "search.exclude": {
+    "build/**": true,
+    "build-debug/**": true
+  }
+}

@@ -1,0 +1,176 @@
+X86 BACKEND STUDY PLAN
+======================
+Goal: 2 weeks to read compiler-generated assembly confidently, trace IR->SelectionDAG/MIR->asm,
+and debug calling-convention/tail-call/frame-layout issues.
+
+Time: 60-90 min/day
+Split each day:
+  - 20 min concept
+  - 30 min hands-on code/asm
+  - 10-20 min "explain back" notes
+
+============================================================
+WEEK 1: CORE X86 + ABI FOUNDATIONS
+============================================================
+
+DAY 1: Registers + subregisters
+- Learn: GPRs, RIP, RFLAGS, subregister aliasing (RAX/EAX/AX/AL/AH)
+- Exercise:
+  1. Write tiny C functions using char/short/int/long long
+  2. Compile with: clang -S -O0
+  3. Identify which register width appears for each type
+  4. Track where zero-extension happens
+- Deliverable: one-page register map from memory
+
+DAY 2: Addressing modes + lea
+- Learn: [base + index*scale + disp], why compilers love lea
+- Exercise:
+  1. Array indexing and struct field access functions
+  2. Predict one addressing expression before compiling
+  3. Verify with emitted asm
+- Deliverable: 10 examples of C expression -> memory operand form
+
+DAY 3: Stack discipline
+- Learn: call, ret, push/pop, prologue/epilogue
+- Exercise:
+  1. Compare -O0 vs -O2 stack frames for same function
+  2. Draw stack diagram at function entry and before call
+  3. Identify saved callee regs
+- Deliverable: hand-drawn stack snapshots for 2 functions
+
+DAY 4: Flags + branches
+- Learn: ZF/SF/CF/OF, cmp vs test, signed vs unsigned jumps
+- Exercise:
+  1. Implement signed and unsigned comparisons in C
+  2. Map each to jcc emitted
+  3. Explain why ja vs jg differs
+- Deliverable: table "C predicate -> flags logic -> jcc mnemonic"
+
+DAY 5: Calling conventions (SysV vs Win64 overview)
+- Learn:
+  1. Arg/return registers
+  2. Caller/callee-saved sets
+  3. Stack alignment obligations
+- Exercise:
+  1. Multi-arg scalar + struct argument examples
+  2. Observe arg passing in registers/stack
+  3. Note return paths
+- Deliverable: side-by-side ABI cheat sheet
+
+DAY 6: Struct/byval passing
+- Learn: why struct-by-value appears as pointer + byval in IR
+- Exercise:
+  1. Small/medium/large struct parameter functions
+  2. Inspect generated LLVM IR and asm
+  3. Correlate byval size/alignment with stack behavior
+- Deliverable: 3 examples with IR + asm annotation
+
+DAY 7: Review + mini quiz day
+- No new topic
+- Exercise:
+  1. Take 5 unfamiliar small asm snippets (from your outputs)
+  2. Reconstruct high-level behavior
+  3. Check by recompiling source
+- Deliverable: error log of wrong guesses + corrected rules
+
+============================================================
+WEEK 2: LLVM BACKEND PIPELINE + DEBUGGING SKILLS
+============================================================
+
+DAY 8: LLVM backend pipeline map
+- Learn: IR -> ISel -> MIR -> RA -> PEI -> AsmPrinter
+- Exercise:
+  1. Use llc -stop-after/-stop-before commands on one test
+  2. Save outputs per stage
+  3. Identify where a call shape changes
+- Deliverable: one pipeline diagram with real file artifacts
+
+DAY 9: SelectionDAG fundamentals
+- Learn: DAG building, legalization, combine, selection
+- Exercise:
+  1. Pick one arithmetic function and one call function
+  2. Dump/inspect DAG-related stage artifacts
+  3. Note one transformation from generic op to target op
+- Deliverable: "before vs after selection" notes for each function
+
+DAY 10: MIR reading basics
+- Learn: virtual regs, frame indices, call sequence pseudos, reg masks
+- Exercise:
+  1. Inspect MIR around a call site
+  2. Locate CALLSEQ_START/END, arg copies, frame indices
+  3. Match to final callq/jmp
+- Deliverable: MIR-to-asm mapping for 1 function
+
+DAY 11: Register allocation + spills
+- Learn: why spills happen, stack slot usage, reload patterns
+- Exercise:
+  1. Force register pressure (many live vars)
+  2. Compare before/after greedy RA MIR
+  3. Identify spill/reload instructions in final asm
+- Deliverable: spill cause analysis in 5 bullets
+
+DAY 12: Tail call and sibling call deep dive
+- Learn: eligibility constraints and ABI compatibility
+- Exercise:
+  1. Use tiny cases: plain call, tail-call-friendly, non-friendly
+  2. Observe when asm uses jmp vs callq+retq
+  3. Tie it to isEligibleForSiblingCallOpt logic
+- Deliverable: decision tree for tail vs sibling vs normal call
+
+DAY 13: Case-study replay (preserve_none + byval bug)
+- Exercise:
+  1. Reproduce old/bad behavior mentally (or via patch toggling)
+  2. Trace exact decision points in lowering
+  3. Explain fix in terms of ABI + stack safety
+- Deliverable: 1-page "root cause + why fix is minimal/correct"
+
+DAY 14: Capstone
+- Exercise:
+  1. Pick one new X86 backend test from tree
+  2. Predict final asm from IR for 1 function
+  3. Validate, then explain every mismatch
+- Deliverable: final report with "prediction accuracy" and next gaps
+
+============================================================
+DAILY COMMAND TEMPLATE
+============================================================
+
+# IR
+clang -S -emit-llvm -O2 foo.c -o foo.ll
+
+# Asm from IR through backend
+llc -mtriple=x86_64-unknown-unknown -mcpu=corei7 foo.ll -o foo.s
+
+# Stage snapshots
+llc -mtriple=x86_64-unknown-unknown -mcpu=corei7 -stop-after=finalize-isel foo.ll -o /tmp/foo.after-isel.mir
+llc -mtriple=x86_64-unknown-unknown -mcpu=corei7 -stop-before=greedy foo.ll -o /tmp/foo.before-ra.mir
+llc -mtriple=x86_64-unknown-unknown -mcpu=corei7 -stop-after=greedy foo.ll -o /tmp/foo.after-ra.mir
+llc -mtriple=x86_64-unknown-unknown -mcpu=corei7 -stop-after=prologepilog foo.ll -o /tmp/foo.after-pei.mir
+
+# Verbose per-pass dumps (filter to one function)
+llc -mtriple=x86_64-unknown-unknown -mcpu=corei7 \
+  -filter-print-funcs=my_func \
+  -print-before-all -print-after-all \
+  < foo.ll -o /tmp/foo.s 2> /tmp/foo.pass-dump.log
+
+============================================================
+WHAT TO MEMORIZE BY END OF WEEK 2
+============================================================
+
+1. SysV x86_64 register/stack calling convention
+2. Caller-saved vs callee-saved registers
+3. cmp/test + common jcc mapping
+4. Stack frame anatomy (including outgoing arg area)
+5. Tail call vs sibling call distinction
+6. Where in LLVM to inspect each lowering stage
+
+============================================================
+PROGRESS CHECKS (every 3 days, score each 1-5)
+============================================================
+
+1. Can I explain this function's stack layout without guessing?
+2. Can I locate why a call is not a sibling call?
+3. Can I map one MIR call sequence to emitted asm?
+4. Can I identify ABI bugs vs optimization effects?
+
+If any score <= 2, repeat that topic day before moving on.

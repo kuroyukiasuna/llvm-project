@@ -1,0 +1,38 @@
+# Sourced by every configuration in launch.json via initCommands.
+# Add your own aliases here — one place, applies everywhere.
+
+# Readable printing for LLVM ADT containers (StringRef, SmallVector, ArrayRef,
+# DenseMap, ...). Does NOT cover IR types — that is what the `ir` aliases below
+# are for.
+command script import /Users/Tianyi.Dang/workspace/llvm-project-alice/llvm/utils/lldbDataFormatters.py
+
+# Generic runtime expression evaluation.
+#
+# `command alias`, NOT `command regex`. An alias forwards to the real
+# `expression` command and therefore inherits its tab-completion / IntelliSense;
+# a regex command is raw text substitution with no completion handler at all.
+# Measured with SBCommandInterpreter.HandleCompletion on "L.getHea":
+#     expr -- ...        2 matches -> getHeader()
+#     regex version      0 matches
+#     alias version      2 matches -> getHeader()
+#
+# This works only because the argument lands at the END of the expansion.
+# The ir/irv/irfn commands below wrap the argument in the middle, so they must
+# stay `command regex` and cannot offer completion. When you want completion
+# while exploring, use:  ev SomeExpr->dump()
+command alias ev expression --
+
+# Print LLVM IR for anything with a dump() method. This is the primary way to
+# inspect IR — the Variables pane cannot do it.
+#   ir  <pointer expr>     e.g.  ir I        ir F        ir L.getHeader()
+#   irv <value/ref expr>   e.g.  irv L       irv *I
+command regex ir  's/(.+)/expr -- (%1)->dump()/'
+command regex irv 's/(.+)/expr -- (%1).dump()/'
+
+# The enclosing function of an Instruction — the single most useful view when
+# you have stopped somewhere and lost the plot.
+command regex irfn 's/(.+)/expr -- (%1)->getParent()->getParent()->dump()/'
+
+# LLVM's nested types blow past LLDB's default display limits.
+settings set target.max-children-count 500
+settings set target.max-children-depth 8

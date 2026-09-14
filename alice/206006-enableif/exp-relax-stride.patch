@@ -1,0 +1,25 @@
+Experiment, not a proposed fix. Disables the stride check that rejects the
+libstdc++ (manually 4x-unrolled) shape in LoopVectorizationLegality.
+
+Result: the loop passes legality ("LV: We can vectorize this loop!") and then
+bails at the *same* VPlan gate as the plain shape:
+    LV: Not vectorizing: Auto-vectorization of loops with potentially faulting
+        load is not supported.
+Zero vector.body blocks either way. Relaxing this check alone is a no-op.
+
+Apply with:  git apply exp-relax-stride.patch && ninja -C ../../build-debug opt
+Revert with: git apply -R exp-relax-stride.patch && ninja -C ../../build-debug opt
+
+diff --git a/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp b/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp
+--- a/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp
++++ b/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp
+@@ -1751,7 +1751,7 @@
+   // Check non-dereferenceable loads if any.
+   for (LoadInst *LI : NonDerefLoads) {
+     // Only support unit-stride access for now.
+     int Stride = isConsecutivePtr(LI->getType(), LI->getPointerOperand());
+-    if (Stride != 1) {
++    if (false && Stride != 1) { // XXX-206006-EXPERIMENT: accept any stride
+       reportVectorizationFailure(
+           "Loop contains potentially faulting strided load",
+           "Cannot vectorize early exit loop with "

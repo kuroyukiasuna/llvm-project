@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ninja: build opt (debug)",
+      "type": "shell",
+      "command": "ninja",
+      "args": ["-C", "${workspaceFolder}/build-debug", "-j", "10", "opt"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "ninja: build llc (debug)",
+      "type": "shell",
+      "command": "ninja",
+      "args": ["-C", "${workspaceFolder}/build-debug", "-j", "10", "llc"],
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "ninja: build clang (debug)",
+      "type": "shell",
+      "command": "ninja",
+      "args": ["-C", "${workspaceFolder}/build-debug", "-j", "10", "clang"],
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "silent", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "ninja: build all three (debug)",
+      "type": "shell",
+      "command": "ninja",
+      "args": ["-C", "${workspaceFolder}/build-debug", "-j", "10", "opt", "clang", "llc"],
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+    }
+  ]
+}
